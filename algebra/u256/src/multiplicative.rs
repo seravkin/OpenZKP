@@ -78,6 +78,15 @@ impl MulFullInline<u64> for U256 {
     }
 }
 
+#[inline(always)]
+pub const fn mul_full_inline_const(lhs: &U256, rhs: u64) -> (U256, u64) {
+    let (r0, carry) = mac(0, lhs.limb(0), rhs, 0);
+    let (r1, carry) = mac(0, lhs.limb(1), rhs, carry);
+    let (r2, carry) = mac(0, lhs.limb(2), rhs, carry);
+    let (r3, carry) = mac(0, lhs.limb(3), rhs, carry);
+    (U256::from_limbs([r0, r1, r2, r3]), carry)
+}
+
 impl MulInline<&U256> for U256 {
     // We shadow carry for readability
     #[allow(clippy::shadow_unrelated)]
@@ -218,6 +227,43 @@ impl Mul<u64> for &U256 {
     }
 }
 
+impl Mul<u32> for U256 {
+    type Output = Self;
+
+    #[cfg_attr(feature = "inline", inline(always))]
+    fn mul(self, rhs: u32) -> Self {
+        self.mul_inline(rhs as u64)
+    }
+}
+
+impl Mul<u32> for &U256 {
+    type Output = U256;
+
+    #[cfg_attr(feature = "inline", inline(always))]
+    fn mul(self, rhs: u32) -> U256 {
+        self.mul_inline(rhs as u64)
+    }
+}
+
+impl Mul<usize> for U256 {
+    type Output = Self;
+
+    #[cfg_attr(feature = "inline", inline(always))]
+    fn mul(self, rhs: usize) -> Self {
+        self.mul_inline(rhs as u64)
+    }
+}
+
+impl Mul<usize> for &U256 {
+    type Output = U256;
+
+    #[cfg_attr(feature = "inline", inline(always))]
+    fn mul(self, rhs: usize) -> U256 {
+        self.mul_inline(rhs as u64)
+    }
+}
+
+
 impl Mul<U256> for u64 {
     type Output = U256;
 
@@ -235,6 +281,8 @@ impl Mul<&U256> for u64 {
         rhs.mul_inline(self)
     }
 }
+
+
 
 impl core::iter::Product for U256 {
     fn product<I: Iterator<Item = U256>>(iter: I) -> Self {

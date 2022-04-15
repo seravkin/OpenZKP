@@ -1,3 +1,4 @@
+use num_traits::Num;
 // False positive: attribute has a use
 #[allow(clippy::useless_attribute)]
 // False positive: Importing preludes is allowed
@@ -10,6 +11,14 @@ use crate::U256;
 use std::format;
 
 impl U256 {
+    pub fn from_str_radix(s: &str, radix: u32) -> Result<Self, <U256 as num_traits::Num>::FromStrRadixErr> {
+        <Self as num_traits::Num>::from_str_radix(s, radix)
+    }
+
+    pub fn from_dec_str(s: &str) -> Result<Self, ParseError> {
+        Self::from_decimal_str(s)
+    }
+
     pub fn from_decimal_str(s: &str) -> Result<Self, ParseError> {
         // ceil(2^256 / 10)
         let max10: Self = Self::from_limbs([

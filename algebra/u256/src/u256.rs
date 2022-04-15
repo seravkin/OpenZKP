@@ -12,8 +12,10 @@ use parity_scale_codec::{Decode, Encode};
 #[cfg(any(test, feature = "proptest"))]
 use proptest_derive::Arbitrary;
 use std::{cmp::Ordering, u64};
+use crate::MulFullInline;
+use crate::multiplicative::mul_full_inline_const;
 
-#[derive(PartialEq, Eq, Clone, Default, Hash)]
+#[derive(PartialEq, Eq, Clone, Default, Hash, Copy)]
 #[cfg_attr(feature = "parity_codec", derive(Encode, Decode))]
 // TODO: Generate a quasi-random sequence.
 // See http://extremelearning.com.au/unreasonable-effectiveness-of-quasirandom-sequences/
@@ -32,6 +34,29 @@ impl U256 {
     ]);
     pub const ONE: Self = Self::from_limbs([1, 0, 0, 0]);
     pub const ZERO: Self = Self::from_limbs([0, 0, 0, 0]);
+
+    #[inline(always)]
+    pub const fn exp10(n: usize) -> Self {
+        match n {
+            0 => Self::ONE,
+            _ => mul_full_inline_const(&Self::exp10(n - 1),10u32 as u64).0
+        }
+    }
+
+    #[inline(always)]
+    pub const fn is_zero(&self) -> bool {
+        self.0[0] == 0 && self.0[1] == 0 && self.0[2] == 0 && self.0[3] == 0
+    }
+
+    #[inline(always)]
+    pub const fn zero() -> Self {
+        Self::ZERO
+    }
+
+    #[inline(always)]
+    pub const fn one() -> Self {
+        Self::ONE
+    }
 
     // Force inlined because it is a trivial conversion which appears in many hot
     // paths
@@ -52,7 +77,7 @@ impl U256 {
     // away.
     // TODO: Make const fn
     #[inline(always)]
-    pub fn limb(&self, index: usize) -> u64 {
+    pub const fn limb(&self, index: usize) -> u64 {
         self.0.get(index).cloned().unwrap_or_default()
     }
 
@@ -66,6 +91,35 @@ impl U256 {
         } else {
             panic!("Limb out of range.")
         }
+    }
+
+    #[inline(always)]
+    pub fn checked_mul(self, other: Self) -> Option<Self> {
+        let (result, carry) = self.mul_full_inline(&other);
+        if carry.is_zero() {
+            Some(result)
+        } else {
+            None
+        }
+    }
+
+    #[inline(always)]
+    pub const fn overflowing_add(self, other: Self) -> (Self, bool) {
+        let mut carry = 0u64;
+        let (res1, overflow1) = self.0[0].overflowing_add(other.0[0]);
+        let (res2, overflow2) = res1.overflowing_add(carry);
+        carry = overflow1 as u64 + overflow2 as u64;
+        let (res3, overflow3) = self.0[1].overflowing_add(other.0[1]);
+        let (res4, overflow4) = res3.overflowing_add(carry);
+        carry = overflow3 as u64 + overflow4 as u64;
+        let (res5, overflow5) = self.0[2].overflowing_add(other.0[2]);
+        let (res6, overflow6) = res5.overflowing_add(carry);
+        carry = overflow5 as u64 + overflow6 as u64;
+        let (res7, overflow7) = self.0[3].overflowing_add(other.0[3]);
+        let (res8, overflow8) = res7.overflowing_add(carry);
+        carry = overflow7 as u64 + overflow8 as u64;
+
+        (U256([res2, res4, res6, res8]), carry > 0)
     }
 }
 
