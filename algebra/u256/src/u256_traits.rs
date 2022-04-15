@@ -2,6 +2,7 @@ use crate::U256;
 use num_traits::{
     Bounded, FromPrimitive, MulAdd, MulAddAssign, Num, One, ToPrimitive, Unsigned, Zero,
 };
+use crate::encoding::ParseError;
 
 impl Bounded for U256 {
     #[inline(always)]
@@ -59,10 +60,18 @@ impl MulAddAssign<&U256, &U256> for U256 {
 }
 
 impl Num for U256 {
-    type FromStrRadixErr = ();
+    type FromStrRadixErr = ParseError;
 
-    fn from_str_radix(_str: &str, _radix: u32) -> Result<Self, Self::FromStrRadixErr> {
-        todo!()
+    fn from_str_radix(str: &str, radix: u32) -> Result<Self, Self::FromStrRadixErr> {
+        if radix == 16 {
+            return U256::from_hex_str_with_error(str)
+        }
+
+        if radix == 10 {
+            return U256::from_dec_str(str)
+        }
+
+        Err(ParseError::InvalidRadix)
     }
 }
 

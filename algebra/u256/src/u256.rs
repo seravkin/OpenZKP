@@ -1,6 +1,7 @@
 // False positive in derived code
 #![allow(unused_qualifications)]
 
+use core::ops::Div;
 // False positive: attribute has a use
 #[allow(clippy::useless_attribute)]
 // False positive: Importing preludes is allowed
@@ -100,6 +101,15 @@ impl U256 {
             Some(result)
         } else {
             None
+        }
+    }
+
+    #[inline(always)]
+    pub fn checked_div(self, other: Self) -> Option<Self> {
+        if other.is_zero() {
+            None
+        } else {
+            Some(self / other)
         }
     }
 

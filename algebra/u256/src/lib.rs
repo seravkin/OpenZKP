@@ -86,3 +86,4 @@ pub use traits::{
 
 #[cfg(not(feature = "std"))]
 extern crate no_std_compat as std;
+extern crate core;

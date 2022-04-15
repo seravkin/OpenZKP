@@ -1,3 +1,4 @@
+use core::fmt::{Display, Formatter};
 use num_traits::Num;
 // False positive: attribute has a use
 #[allow(clippy::useless_attribute)]
@@ -78,6 +79,15 @@ impl U256 {
         array.copy_from_slice(&bytes[..32]);
         Self::from_bytes_be(&array)
     }
+
+    pub fn from_hex_str_with_error(s: &str) -> Result<U256, ParseError> {
+        let byte_string = format!("{:0>64}", s.trim_start_matches("0x"));
+        // TODO: error
+        let bytes = hex::decode(byte_string).map_err(|_| ParseError::InvalidHex)?;
+        let mut array = [0_u8; 32];
+        array.copy_from_slice(&bytes[..32]);
+        Ok(Self::from_bytes_be(&array))
+    }
 }
 
 // TODO: Implement FromStr using hex
@@ -86,7 +96,21 @@ impl U256 {
 pub enum ParseError {
     Empty,
     Overflow,
+    InvalidHex,
+    InvalidRadix,
     InnerError(core::num::ParseIntError),
+}
+
+impl Display for ParseError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
+        match self {
+            ParseError::Empty => write!(f, "Empty string"),
+            ParseError::Overflow => write!(f, "Overflow"),
+            ParseError::InvalidHex => write!(f, "Invalid hex string"),
+            ParseError::InvalidRadix => write!(f, "Invalid radix"),
+            ParseError::InnerError(e) => write!(f, "{}", e),
+        }
+    }
 }
 
 impl From<core::num::ParseIntError> for ParseError {
