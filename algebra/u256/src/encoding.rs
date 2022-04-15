@@ -122,14 +122,8 @@ impl From<core::num::ParseIntError> for ParseError {
 #[cfg(feature = "std")]
 impl fmt::Display for U256 {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(
-            f,
-            "{:016x}{:016x}{:016x}{:016x}",
-            self.limb(3),
-            self.limb(2),
-            self.limb(1),
-            self.limb(0)
-        )
+        let str = self.to_decimal_string();
+        write!(f, "{}", str)
     }
 }
 
